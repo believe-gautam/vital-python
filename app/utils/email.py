@@ -5,8 +5,8 @@ from email.mime.multipart import MIMEMultipart
 def send_email(to_email, subject, body):
     smtp_server = "smtp.hostinger.com"
     smtp_port = 465
-    sender_email = "development@livepbx.us"  
-    password = "@1234#Google"  
+    sender_email = "Iqbal@techcarrel.com"  
+    password = "#Tc~iqb~20223"  
 
     try:
         # Email content

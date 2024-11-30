@@ -2,36 +2,88 @@ from flask import Blueprint, request, jsonify
 from app.models.user import User
 from app.utils.database import init_db
 from app import get_db
+from app.utils.email import send_email
+import threading
+import random
+import string
+
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.before_request
 def setup_database():
     init_db()
 
-@auth_bp.route('/', methods=['GET'])
-def check():
-    return jsonify({'message': 'User registered successfully'}), 201
+    
+
+def send_email_async(to_email, subject, body):
+    """
+    Background thread for sending email asynchronously.
+    """
+    try:
+        send_email(to_email, subject, body)
+        print("Email sent successfully.")
+    except Exception as e:
+         print(f"Email sending failed for {to_email}: {e}")
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    
-    if not all(k in data for k in ['mobile_number', 'password']):
+
+    if not all(k in data for k in ['username', 'email']):
         return jsonify({'error': 'Missing required fields'}), 400
-    
-    if User.create(data['mobile_number'], data['password']):
-        return jsonify({'message': 'User registered successfully'}), 201
+
+    username = data['username']
+    email = data['email']
+
+    otp = ''.join(random.choices(string.digits, k=6))
+    if User.create_user(username, email, otp):
+        email_thread = threading.Thread(
+            target=send_email_async, 
+            args=(email, "Your OTP Verification Code", f"Your OTP is: {otp}")
+        )
+        email_thread.start()  
+
+        return jsonify({'message': 'User registered successfully. Check your email for OTP'}), 201
     else:
-        return jsonify({'error': 'Mobile number already exists'}), 409
+        return jsonify({'error': 'Email already exists'}), 409
+
+
+@auth_bp.route('/verify-otp', methods=['POST'])
+def verify_otp():
+    data = request.get_json()
+    email = data.get('email')
+    otp = data.get('otp')
+    if User.verify_otp(email, otp):
+        return jsonify({"message": "OTP verified successfully."}), 200
+    else:
+        return jsonify({"error": "Invalid or expired OTP."}), 400
+
+
+
+@auth_bp.route('/set-password', methods=['POST'])
+def set_password():
+    data = request.get_json()
+
+    if not all(k in data for k in ['email', 'new_password', 'confirm_password']):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    if data['new_password'] != data['confirm_password']:
+        return jsonify({'error': 'Passwords do not match'}), 400
+    if User.set_password(data['email'], data['new_password']):
+        return jsonify({'message': 'Password set successfully. You can now login'}), 200
+    else:
+        return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400
+
+
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    
-    if not all(k in data for k in ['mobile_number', 'password']):
+
+    if not all(k in data for k in ['email', 'password']):
         return jsonify({'error': 'Missing required fields'}), 400
-    
-    user = User.authenticate(data['mobile_number'], data['password'])
+
+    user = User.authenticate(data['email'], data['password'])
     if user:
         token = User.generate_token(user['id'])
         return jsonify({
@@ -40,77 +92,65 @@ def login():
         }), 200
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
-    
 
-@auth_bp.route('/forgot-password', methods=['POST'])
-def forgot_password():
+
+
+
+
+def send_email_async(to_email, subject, body):
+    """
+    Background thread for sending email asynchronously.
+    """
+    try:
+        send_email(to_email, subject, body)
+        print(f"Email sent to {to_email}")
+    except Exception as e:
+        print(f"Error sending email to {to_email}: {e}")
+
+# Forget Password Request API
+@auth_bp.route('/forget-password', methods=['POST'])
+def forget_password():
     data = request.get_json()
-    
-    if 'mobile_number' not in data:
-        return jsonify({'error': 'Mobile number is required'}), 400
-    
-    mobile_number = data['mobile_number']
-    
-    # Check if mobile number exists
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM users WHERE mobile_number = %s', (mobile_number,))
-    user = cursor.fetchone()
-    cursor.close()
-    
+    email = data.get('email')
+
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+
+    # Get user by email
+    user = User.get_user_by_email(email)
     if not user:
-        return jsonify({'error': 'Mobile number not found'}), 404
-    
-    # Generate OTP
-    otp = User.generate_otp(mobile_number)
-    
-    if otp:
-        # TODO: In real application, send OTP via SMS
-        return jsonify({
-            'message': 'OTP generated successfully',
-            'otp': otp  # Only for testing/demonstration
-        }), 200
-    else:
-        return jsonify({'error': 'Failed to generate OTP'}), 500
+        return jsonify({'error': 'User with this email does not exist'}), 404
 
-@auth_bp.route('/verify-otp', methods=['POST'])
-def verify_otp():
+    # Generate reset token
+    token = User.generate_reset_token(email)
+
+    # Create reset link
+    reset_link = f"http://127.0.0.1:5000/reset-password/{token}"
+
+    # Send email asynchronously
+    email_thread = threading.Thread(
+        target=send_email_async, 
+        args=(email, "Password Reset Request", f"Click the link to reset your password: {reset_link}")
+    )
+    email_thread.start()
+
+    return jsonify({'message': 'Password reset email sent successfully'}), 200
+
+# Reset Password API
+@auth_bp.route('/reset-password/<token>', methods=['POST'])
+def reset_password(token):
     data = request.get_json()
-    
-    if not all(k in data for k in ['mobile_number', 'otp']):
-        return jsonify({'error': 'Mobile number and OTP are required'}), 400
-    
-    mobile_number = data['mobile_number']
-    otp = data['otp']
-    
-    # Verify OTP
-    if User.verify_otp(mobile_number, otp):
-        return jsonify({
-            'message': 'OTP verified successfully',
-            'can_reset_password': True
-        }), 200
-    else:
-        return jsonify({'error': 'Invalid or expired OTP'}), 400
-    
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
 
+    if not new_password or not confirm_password:
+        return jsonify({'error': 'Both password fields are required'}), 400
 
+    if new_password != confirm_password:
+        return jsonify({'error': 'Passwords do not match'}), 400
 
-
-@auth_bp.route('/reset-password', methods=['POST'])
-def reset_password():
-    data = request.get_json()
-    
-    if not all(k in data for k in ['mobile_number', 'new_password']):
-        return jsonify({'error': 'Mobile number and new password are required'}), 400
-    
-    mobile_number = data['mobile_number']
-    new_password = data['new_password']
-    
-    # Reset password (only if OTP was previously verified)
-    if User.reset_password_with_otp(mobile_number, new_password):
+    # Verify token and reset password
+    if User.reset_password(token, new_password):
         return jsonify({'message': 'Password reset successful'}), 200
     else:
-        return jsonify({'error': 'Password reset failed. Verify OTP first.'}), 400
-    
-
-    
+        return jsonify({'error': 'Invalid or expired token'}), 400

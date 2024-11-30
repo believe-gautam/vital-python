@@ -7,16 +7,18 @@ def init_db():
     # Create users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-           id INT AUTO_INCREMENT PRIMARY KEY,
-            mobile_number VARCHAR(15) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            otp VARCHAR(6) NULL,
-            otp_expiration DATETIME NULL,
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(255) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255),
+            otp VARCHAR(6),
+            otp_expiration DATETIME,
             is_otp_verified BOOLEAN DEFAULT FALSE,
+            reset_token VARCHAR(255),
+            reset_token_expiration DATETIME,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     ''')
-    
     
     db.commit()
     cursor.close()

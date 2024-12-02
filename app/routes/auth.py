@@ -25,6 +25,8 @@ def send_email_async(to_email, subject, body):
     except Exception as e:
          print(f"Email sending failed for {to_email}: {e}")
 
+
+# register Request API
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -43,11 +45,12 @@ def register():
         )
         email_thread.start()  
 
-        return jsonify({'message': 'User registered successfully. Check your email for OTP'}), 201
+        return jsonify({'message': 'User registered successfully. Check your email for OTP'}), 200
     else:
         return jsonify({'error': 'Email already exists'}), 409
 
 
+# verify-otp Request API
 @auth_bp.route('/verify-otp', methods=['POST'])
 def verify_otp():
     data = request.get_json()
@@ -59,7 +62,7 @@ def verify_otp():
         return jsonify({"error": "Invalid or expired OTP."}), 400
 
 
-
+# set-password Request API
 @auth_bp.route('/set-password', methods=['POST'])
 def set_password():
     data = request.get_json()
@@ -75,7 +78,7 @@ def set_password():
         return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400
 
 
-
+# login Request API
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -125,7 +128,8 @@ def forget_password():
     token = User.generate_reset_token(email)
 
     # Create reset link
-    reset_link = f"http://127.0.0.1:5000/reset-password/{token}"
+    reset_link = f"http://localhost:5000/reset-password/{token}"
+    
 
     # Send email asynchronously
     email_thread = threading.Thread(

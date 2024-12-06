@@ -153,3 +153,30 @@ class User:
         cursor.close()
         return user
 
+    @staticmethod
+    def get_by_id(cls, user_id):
+        query = "SELECT * FROM users WHERE id = %s"
+        return cls.execute_single(query, (user_id,))
+
+    @staticmethod
+    def get_by_email(cls, email):
+        query = "SELECT * FROM users WHERE email = %s"
+        return cls.execute_single(query, (email,))
+
+    def generate_token(self, user_id):
+        try:
+            # Token payload
+            payload = {
+                'user_id': user_id,
+                'exp': datetime.utcnow() + timedelta(days=1),  # Token expires in 1 day
+                'iat': datetime.utcnow()
+            }
+            # Generate token
+            token = jwt.encode(
+                payload,
+                os.getenv('JWT_SECRET_KEY'),
+                algorithm="HS256"
+            )
+            return token
+        except Exception as e:
+            return None

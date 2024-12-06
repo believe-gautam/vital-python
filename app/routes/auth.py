@@ -87,6 +87,8 @@ def login():
         return jsonify({'error': 'Missing required fields'}), 400
 
     user = User.authenticate(data['email'], data['password'])
+    print('---------------------- here ')
+    print(user)
     if user:
         token = User.generate_token(user['id'])
         return jsonify({

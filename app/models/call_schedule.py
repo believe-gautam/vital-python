@@ -8,29 +8,27 @@ class CallSchedule:
         cursor = db.cursor(dictionary=True)
 
         try:
-            # First verify if extensions exist
+            # Verify extensions exist in ps_endpoints
             cursor.execute(
-                "SELECT id FROM extensions WHERE extension_number = %s", 
-                (caller_extension,)  # Note the comma to make it a tuple
+                "SELECT id FROM ps_endpoints WHERE id = %s", 
+                (caller_extension,)
             )
-            source_ext = cursor.fetchone()
-            
+            if not cursor.fetchone():
+                return None  # Source extension doesn't exist
+
             cursor.execute(
-                "SELECT id FROM extensions WHERE extension_number = %s", 
-                (destination_extension,)  # Note the comma to make it a tuple
+                "SELECT id FROM ps_endpoints WHERE id = %s", 
+                (destination_extension,)
             )
-            dest_ext = cursor.fetchone()
-
-            if not source_ext or not dest_ext:
-                return None  # One or both extensions don't exist
-
+            if not cursor.fetchone():
+                return None  # Destination extension doesn't exist
 
             # Insert the scheduled call
             cursor.execute(
                 """INSERT INTO scheduled_calls 
-                (user_id, source_extension_id, destination_extension_id, scheduled_time, notes, status)
+                (user_id, source_extension, destination_extension, scheduled_time, notes, status)
                 VALUES (%s, %s, %s, %s, %s, %s)""",
-                (user_id, source_ext['id'], dest_ext['id'], schedule_time, description, 'pending')
+                (user_id, caller_extension, destination_extension, schedule_time, description, 'pending')
             )
             
             db.commit()
@@ -42,7 +40,6 @@ class CallSchedule:
         finally:
             cursor.close()
 
-
     @staticmethod
     def get_all(extension=None, user_id=None):
         db = get_db()
@@ -52,33 +49,27 @@ class CallSchedule:
             if extension:
                 cursor.execute('''
                     SELECT sc.*, 
-                           e1.extension_number as source_number,
-                           e2.extension_number as destination_number
+                           sc.source_extension as source_number,
+                           sc.destination_extension as destination_number
                     FROM scheduled_calls sc
-                    JOIN extensions e1 ON sc.source_extension_id = e1.id
-                    JOIN extensions e2 ON sc.destination_extension_id = e2.id
-                    WHERE e1.extension_number = %s OR e2.extension_number = %s
+                    WHERE sc.source_extension = %s OR sc.destination_extension = %s
                     ORDER BY scheduled_time
                 ''', (extension, extension))
             elif user_id:
                 cursor.execute('''
                     SELECT sc.*, 
-                           e1.extension_number as source_number,
-                           e2.extension_number as destination_number
+                           sc.source_extension as source_number,
+                           sc.destination_extension as destination_number
                     FROM scheduled_calls sc
-                    JOIN extensions e1 ON sc.source_extension_id = e1.id
-                    JOIN extensions e2 ON sc.destination_extension_id = e2.id
                     WHERE sc.user_id = %s
                     ORDER BY scheduled_time
                 ''', (user_id,))
             else:
                 cursor.execute('''
                     SELECT sc.*, 
-                           e1.extension_number as source_number,
-                           e2.extension_number as destination_number
+                           sc.source_extension as source_number,
+                           sc.destination_extension as destination_number
                     FROM scheduled_calls sc
-                    JOIN extensions e1 ON sc.source_extension_id = e1.id
-                    JOIN extensions e2 ON sc.destination_extension_id = e2.id
                     ORDER BY scheduled_time
                 ''')
             
@@ -97,11 +88,9 @@ class CallSchedule:
         try:
             cursor.execute('''
                 SELECT sc.*, 
-                       e1.extension_number as source_number,
-                       e2.extension_number as destination_number
+                       sc.source_extension as source_number,
+                       sc.destination_extension as destination_number
                 FROM scheduled_calls sc
-                JOIN extensions e1 ON sc.source_extension_id = e1.id
-                JOIN extensions e2 ON sc.destination_extension_id = e2.id
                 WHERE sc.id = %s
             ''', (schedule_id,))
             return cursor.fetchone()
@@ -150,11 +139,9 @@ class CallSchedule:
         try:
             cursor.execute('''
                 SELECT sc.*, 
-                       e1.extension_number as source_number,
-                       e2.extension_number as destination_number
+                       sc.source_extension as source_number,
+                       sc.destination_extension as destination_number
                 FROM scheduled_calls sc
-                JOIN extensions e1 ON sc.source_extension_id = e1.id
-                JOIN extensions e2 ON sc.destination_extension_id = e2.id
                 WHERE sc.status = 'pending'
                 AND sc.scheduled_time <= NOW()
                 ORDER BY sc.scheduled_time

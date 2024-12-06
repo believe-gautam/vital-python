@@ -39,8 +39,8 @@ CORS(
 
 if __name__ == '__main__':
     # Get values from environment variables
-    host = os.getenv('FLASK_RUN_HOST', '127.0.0.1')  # Default is '127.0.0.1'
-    port = int(os.getenv('FLASK_RUN_PORT', 5000))  # Default is 5000
+    host = os.getenv('FLASK_RUN_HOST', '0.0.0.0')  # Default is '127.0.0.1'
+    port = int(os.getenv('FLASK_RUN_PORT', 3001))  # Default is 5000
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # Convert to boolean
 
     app.run(host=host, port=port, debug=debug)

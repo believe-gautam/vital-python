@@ -6,7 +6,7 @@ from config import Config
 import mysql.connector
 import random
 import string 
-
+import os
 
 class User:
     @staticmethod
@@ -82,12 +82,29 @@ class User:
 
     @staticmethod
     def generate_token(user_id):
-        payload = {
-            'user_id': user_id,
-            'exp': datetime.utcnow() + timedelta(days=1)
-        }
-        return jwt.encode(payload, Config.SECRET_KEY, algorithm='HS256')
-    
+        # payload = {
+        #     'user_data': user_id,
+        #     'exp': datetime.utcnow() + timedelta(days=1)
+        # }
+        # return jwt.encode(payload, Config.SECRET_KEY, algorithm='HS256')
+
+        try:
+            # Token payload
+            payload = {
+                'user_id': user_id,
+                'exp': datetime.utcnow() + timedelta(days=1),  # Token expires in 1 day
+                'iat': datetime.utcnow()
+            }
+            # Generate token
+            token = jwt.encode(
+                payload,
+                os.getenv('JWT_SECRET_KEY'),
+                algorithm="HS256"
+            )
+            return token
+        except Exception as e:
+            print(e)
+            return None
 
 
 
@@ -163,11 +180,11 @@ class User:
         query = "SELECT * FROM users WHERE email = %s"
         return cls.execute_single(query, (email,))
 
-    def generate_token(self, user_id):
+    def generate_token2(self, user_id):
         try:
             # Token payload
             payload = {
-                'user_id': user_id,
+                'user_data': user_id,
                 'exp': datetime.utcnow() + timedelta(days=1),  # Token expires in 1 day
                 'iat': datetime.utcnow()
             }

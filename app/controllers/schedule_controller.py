@@ -12,8 +12,10 @@ class ScheduleController:
     def create_schedule(self, data):
         try:
             # Validate extensions exist
-            caller = Extension.get_by_id(data['caller_extension'])
-            destination = Extension.get_by_id(data['destination_extension'])
+            print('================== here we are');
+            print(data)
+            caller =  Extension.get_by_id(data['source_extension'])
+            destination =  Extension.get_by_id(data['destination_extension'])
             
             if not caller or not destination:
                 return jsonify({
@@ -23,19 +25,25 @@ class ScheduleController:
 
             # Parse schedule time
             try:
-                schedule_time = datetime.fromisoformat(data['schedule_time'])
+                schedule_time = datetime.fromisoformat(data['scheduled_time'])
             except ValueError:
                 return jsonify({
                     'status': 'error',
                     'message': 'Invalid schedule time format'
                 }), 400
-
-            # Create schedule
-            CallSchedule.create(
-                data['caller_extension'],
+            print('we reach to the point')
+            print(
+                data['source_extension'],
                 data['destination_extension'],
                 schedule_time,
-                data.get('description')
+                'scheduled_time'
+            )
+            # Create schedule
+            CallSchedule.create(
+                data['source_extension'],
+                data['destination_extension'],
+                schedule_time,
+                'scheduled_time'
             )
             
             print({

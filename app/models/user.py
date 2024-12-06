@@ -171,10 +171,42 @@ class User:
         return user
 
     @staticmethod
-    def get_by_id(cls, user_id):
-        query = "SELECT * FROM users WHERE id = %s"
-        return cls.execute_single(query, (user_id,))
-
+    def get_by_id(user_id):
+        cursor = None
+        try:
+            print("Attempting to find user with ID:", user_id)
+            db = get_db()
+            cursor = db.cursor(dictionary=True)
+            
+            # The query we'll execute
+            query = '''SELECT * FROM users WHERE id = %s'''
+            print("Query template:", query)
+            print("Parameters:", (user_id,))
+            
+            # Execute the query
+            cursor.execute(query, (user_id,))
+            
+            # Fetch the result after executing
+            find_user = cursor.fetchone()
+            print("Query result:", find_user)
+            
+            db.commit()
+            return find_user
+            
+        except Exception as e:
+            print("Database error occurred:")
+            print("Error message:", str(e))
+            print("Error type:", type(e).__name__)
+            # You might want to log the error here
+            
+            # Optionally, re-raise the exception if you want it to propagate
+            raise e
+        
+        finally:
+            # Make sure to close the cursor
+            if cursor:
+                cursor.close()
+                
     @staticmethod
     def get_by_email(cls, email):
         query = "SELECT * FROM users WHERE email = %s"

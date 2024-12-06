@@ -55,6 +55,7 @@ def base_method():
 @api.route('/schedules', methods=['POST'])
 @token_required
 def create_schedule(current_user):
+    print(request.json)
     return schedule_controller.create_schedule(request.json)
 
 @api.route('/schedules', methods=['GET'])

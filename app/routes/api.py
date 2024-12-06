@@ -5,8 +5,15 @@ from app.controllers.call_controller import CallController
 from app.middleware.auth import token_required
 from flask import jsonify
 
+import re
+from datetime import datetime
 
 
+from app.controllers.extension_controller import ExtensionController
+from app.controllers.cdr_controller import CDRController
+
+extension_controller = ExtensionController()
+cdr_controller = CDRController()
 
 
 
@@ -65,7 +72,46 @@ def cancel_schedule(current_user, schedule_id):
 @token_required
 def initiate_call(current_user):
     return call_controller.initiate_call(request.json)
+
+
+
+
+# Extension management routes
+@api.route('/extensions', methods=['POST'])
+@token_required
+def create_extension(current_user):
+    return extension_controller.create_extension(request.json)
+
+@api.route('/extensions/<extension_id>', methods=['PUT'])
+@token_required
+def update_extension(current_user, extension_id):
+    return extension_controller.update_extension(extension_id, request.json)
+
+@api.route('/extensions/<extension_id>', methods=['DELETE'])
+@token_required
+def delete_extension(current_user, extension_id):
+    return extension_controller.delete_extension(extension_id)
+
+@api.route('/extensions', methods=['GET'])
+@token_required
+def get_extensions(current_user):
+    return extension_controller.get_extensions()
+
+# Call reporting routes
+@api.route('/calls/history', methods=['GET'])
+@token_required
+def get_call_history(current_user):
+    extension = request.args.get('extension')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        
+    return cdr_controller.get_call_history(extension, start_date, end_date)
+
 # Example usage in app.py
 def register_routes(app):
     app.register_blueprint(api, url_prefix='/api')

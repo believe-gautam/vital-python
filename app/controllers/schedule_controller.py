@@ -37,6 +37,11 @@ class ScheduleController:
                 schedule_time,
                 data.get('description')
             )
+            
+            print({
+                'status': 'success',
+                'message': 'Call scheduled successfully'
+            })
 
             return jsonify({
                 'status': 'success',

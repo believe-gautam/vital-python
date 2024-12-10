@@ -71,11 +71,16 @@ def initiate_call(current_user):
 @token_required
 def create_extension(current_user):
     try:
+        print('here we are 1')
         data = request.json
+        print('here we are 2')
+
         data['user_id'] = current_user['id']
+        print('here we are 3')
+        print(data)
         return extension_controller.create_extension(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 200
 
 @api.route('/extensions/<extension_id>', methods=['PUT'])
 @token_required

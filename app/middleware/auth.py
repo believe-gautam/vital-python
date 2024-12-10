@@ -18,7 +18,6 @@ def token_required(f):
                 
         if not token:
             return jsonify({'message': 'Token is missing'}), 401
-            
         try:
             # Decode token
             data = jwt.decode(

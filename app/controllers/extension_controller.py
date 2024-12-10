@@ -19,14 +19,15 @@ class ExtensionController:
                     'message': 'Password must be at least 8 characters'
                 }), 400
 
-            Extension.create(data)
+            # Extension.create(data)
             return jsonify({
                 'status': 'success',
                 'message': 'Extension created successfully'
             }), 201
         except Exception as e:
+            print(e)
             return jsonify({
-                'status': 'error',
+                'status': 'error1',
                 'message': str(e)
             }), 500
 

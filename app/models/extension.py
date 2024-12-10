@@ -49,16 +49,18 @@ class Extension:
 
     @staticmethod
     def create(extension_data):
+        print('Check Here')
+        print(extension_data)
         db = get_db()
         cursor = db.cursor(dictionary=True)
-        
+        print('This is testing')
         try:
             # Check if extension already exists
             cursor.execute("SELECT id FROM ps_endpoints WHERE id = %s", 
                          (extension_data['extension'],))
             if cursor.fetchone():
                 raise Exception("Extension already exists")
-
+            
             # Insert endpoint
             cursor.execute("""
                 INSERT INTO ps_endpoints 
@@ -71,7 +73,7 @@ class Extension:
                 extension_data['extension'],
                 'testing',
                 'all',
-                'ulaw,alaw,gsm',
+                'opus,ulaw,alaw',
                 'no'
             ))
 

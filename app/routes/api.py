@@ -71,13 +71,8 @@ def initiate_call(current_user):
 @token_required
 def create_extension(current_user):
     try:
-        print('here we are 1')
         data = request.json
-        print('here we are 2')
-
         data['user_id'] = current_user['id']
-        print('here we are 3')
-        print(data)
         return extension_controller.create_extension(data)
     except Exception as e:
         return jsonify({'error': str(e)}), 200
@@ -103,6 +98,15 @@ def delete_extension(current_user, extension_id):
 def get_extensions(current_user):
     try:
         return extension_controller.get_extensions()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@api.route('/get-ext', methods=['GET'])
+@token_required
+def get_user_ext(current_user):
+    try:
+        user_id = current_user['id']
+        return extension_controller.get_user_ext(user_id)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

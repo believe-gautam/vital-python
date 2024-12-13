@@ -6,6 +6,12 @@ from app.utils.email import send_email
 import threading
 import random
 import string
+from app.middleware.auth import token_required
+
+from app.controllers.extension_controller import ExtensionController
+
+# Initialize controllers
+extension_controller = ExtensionController()
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -57,7 +63,6 @@ def verify_otp():
     email = data.get('email')
     otp = data.get('otp')
     response = User.verify_otp(email, otp)
-    print(response)
     if response['status']:
         user  = response['user_data']
         token  = User.generate_token(user['id']); 
@@ -68,15 +73,30 @@ def verify_otp():
 
 # set-password Request API
 @auth_bp.route('/set-password', methods=['POST'])
-def set_password():
+@token_required
+def set_password(current_user):
     data = request.get_json()
-
+    user_id  = current_user['id']
     if not all(k in data for k in ['email', 'new_password', 'confirm_password']):
         return jsonify({'error': 'Missing required fields'}), 400
 
     if data['new_password'] != data['confirm_password']:
         return jsonify({'error': 'Passwords do not match'}), 400
-    if User.set_password(data['email'], data['new_password']):
+    if User.set_password(data['email'], data['new_password'],user_id):
+        data['iser_id'] = user_id
+        # response = extension_controller.create_single_ext(data)
+        return jsonify({'message': 'Password set successfully. You can now login'}), 200
+    else:
+        return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400
+
+
+@auth_bp.route('/create-ext', methods=['GET'])
+@token_required
+def create_ext(current_user):
+    data = request.get_json()
+    data['user_id']   = current_user['id']
+    response = extension_controller.create_single_ext(data)
+    if(response):
         return jsonify({'message': 'Password set successfully. You can now login'}), 200
     else:
         return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400

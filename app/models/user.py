@@ -42,12 +42,18 @@ class User:
             if user:
                 cursor.execute('''
                     UPDATE users 
-                    SET is_otp_verified = %s 
+                    SET is_otp_verified = %s,
+                        otp = ''
                     WHERE email = %s
                 ''', (True, email))
                 db.commit()
-                return True
-            return False
+                return {"status": True,"user_data":user}
+            return {"status": False,"user_data":{}}
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': str(e)
+            }
         finally:
             cursor.close()
 

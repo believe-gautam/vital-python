@@ -84,23 +84,45 @@ def set_password(current_user):
         return jsonify({'error': 'Passwords do not match'}), 400
     if User.set_password(data['email'], data['new_password'],user_id):
         data['iser_id'] = user_id
-        # response = extension_controller.create_single_ext(data)
+        response = extension_controller.create_single_ext(data)
         return jsonify({'message': 'Password set successfully. You can now login'}), 200
     else:
         return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400
 
+
+# @auth_bp.route('/create-ext', methods=['GET'])
+# @token_required
+# def create_ext(current_user):
+#     data['user_id']   = current_user['id']
+#     print(data)
+#     response = extension_controller.create_single_ext(data)
+#     if(response):
+#         return jsonify({'message': 'Password set successfully. You can now login'}), 200
+#     else:
+#         return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400
 
 @auth_bp.route('/create-ext', methods=['GET'])
 @token_required
 def create_ext(current_user):
-    data = request.get_json()
-    data['user_id']   = current_user['id']
+    # Ensure that current_user is not None and contains the 'id' field
+    if not current_user or 'id' not in current_user:
+        return jsonify({'error': 'Invalid user'}), 400
+
+    # Initialize the data dictionary
+    data = {}
+
+    # Add user_id to the data dictionary
+    data['user_id'] = current_user['id']
+    print(data)
+
+    # Call the extension controller to create the extension
     response = extension_controller.create_single_ext(data)
-    if(response):
+
+    # Check if the response indicates success or failure
+    if response:
         return jsonify({'message': 'Password set successfully. You can now login'}), 200
     else:
         return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400
-
 
 # login Request API
 @auth_bp.route('/login', methods=['POST'])

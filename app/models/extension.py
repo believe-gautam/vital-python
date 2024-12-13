@@ -249,8 +249,8 @@ class Extension:
         db = get_db()
         cursor = db.cursor(dictionary=True)
         try:
-            # Decode the token to extract user_id (assuming a helper function `decode_token`)
-            user_id =payload_data['user_id'] #decode_token(token).get("user_id")
+            # Decode the token to extract user_id
+            user_id = payload_data['user_id']
             if not user_id:
                 raise Exception("Invalid or missing user_id in token")
 
@@ -302,19 +302,20 @@ class Extension:
             if cursor.fetchone():
                 raise Exception("Extension already exists")
 
-            # Insert endpoint
+            # Insert endpoint - Fixed SQL statement to match parameters
             cursor.execute("""
                 INSERT INTO ps_endpoints 
                 (id, transport, aors, auth, context, disallow, allow, direct_media,
-                 disable_direct_media_on_nat, force_rport, ice_support, rewrite_contact, 
-                 rtp_symmetric, use_avpf, media_encryption, dtls_verify, dtls_rekey, 
-                 dtls_cert_file, dtls_private_key, dtls_setup, rtcp_mux, webrtc, user_id,is_selected)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                disable_direct_media_on_nat, force_rport, ice_support, rewrite_contact, 
+                rtp_symmetric, use_avpf, media_encryption, dtls_verify, dtls_rekey, 
+                dtls_cert_file, dtls_private_key, dtls_setup, rtcp_mux, webrtc, user_id, is_selected)
+                VALUES 
+                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                new_extension,
+                str(new_extension),  # Cast to string to ensure compatibility
                 static_values["transport"],
-                new_extension,
-                new_extension,
+                str(new_extension),
+                str(new_extension),
                 static_values["context"],
                 static_values["disallow"],
                 static_values["allow"],
@@ -334,29 +335,28 @@ class Extension:
                 static_values["rtcp_mux"],
                 static_values["webrtc"],
                 user_id,
-                static_values["is_selected"],
-
+                static_values["is_selected"]
             ))
 
             # Insert authentication
             cursor.execute("""
                 INSERT INTO ps_auths 
                 (id, auth_type, password, username)
-                VALUES (%s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s)
             """, (
-                new_extension,
+                str(new_extension),
                 static_values["auth_type"],
                 password,
-                new_extension
+                str(new_extension)
             ))
 
             # Insert AOR (Address of Record)
             cursor.execute("""
                 INSERT INTO ps_aors 
                 (id, max_contacts, qualify_frequency)
-                VALUES (%s, %s, %s, %s)
+                VALUES (%s, %s, %s)
             """, (
-                new_extension,
+                str(new_extension),
                 static_values["max_contacts"],
                 static_values["qualify_frequency"]
             ))
@@ -377,9 +377,6 @@ class Extension:
             raise
         finally:
             cursor.close()
-
-
-
 
     @staticmethod
     def update(extension_id, extension_data):

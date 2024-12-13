@@ -56,10 +56,14 @@ def verify_otp():
     data = request.get_json()
     email = data.get('email')
     otp = data.get('otp')
-    if User.verify_otp(email, otp):
-        return jsonify({"message": "OTP verified successfully."}), 200
+    response = User.verify_otp(email, otp)
+    print(response)
+    if response['status']:
+        user  = response['user_data']
+        token  = User.generate_token(user['id']); 
+        return jsonify({"message": "OTP verified successfully.","token":token}), 200
     else:
-        return jsonify({"error": "Invalid or expired OTP."}), 400
+        return jsonify({"error": "Invalid or expired OTP.","token":''}), 400
 
 
 # set-password Request API

@@ -58,7 +58,7 @@ class User:
             cursor.close()
 
     @staticmethod
-    def set_password(email, new_password):
+    def set_password(email, new_password,user_id):
         db = get_db()
         cursor = db.cursor(dictionary=True)
         hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
@@ -67,8 +67,8 @@ class User:
             cursor.execute('''
                 UPDATE users 
                 SET password = %s, otp = NULL, otp_expiration = NULL, is_otp_verified = %s
-                WHERE email = %s AND is_otp_verified = %s
-            ''', (hashed, False, email, True))  
+                WHERE id = %s AND is_otp_verified = %s
+            ''', (hashed, False, user_id, True))  
             db.commit()
             return cursor.rowcount > 0
         finally:

@@ -70,6 +70,18 @@ def verify_otp():
     else:
         return jsonify({"error": "Invalid or expired OTP.","token":''}), 400
 
+@auth_bp.route("/check-email", methods=['GET'])
+def checkEmail():
+        email = 'bobby786b@gmail.com'
+        otp = 121212121
+        email_thread = threading.Thread(
+        target=send_email_async, 
+        args=(email, "Your OTP Verification Code", f"Your OTP is: {otp}")
+        )
+        email_thread.start()  
+        print(email_thread)
+        return jsonify({"message": "Email Send Successfully."}), 200
+
 
 # set-password Request API
 @auth_bp.route('/set-password', methods=['POST'])

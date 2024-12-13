@@ -33,8 +33,9 @@ class ExtensionController:
                 'status': 'error1',
                 'message': str(e)
             }), 500
-
-    def create_single_ext(self, data):
+        
+    @staticmethod
+    def create_single_ext(data):
         try:
             Extension.single_ext_create(data)
             return jsonify({

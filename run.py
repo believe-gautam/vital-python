@@ -49,11 +49,20 @@
 from app import create_app
 import os
 from dotenv import load_dotenv
+from flask_cors import CORS
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = create_app()
+
+
+CORS(
+    app,
+    resources={r"/*": {"origins": "*"}},  # Allow all origins for all routes
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Allowed methods
+    allow_headers=["Content-Type", "Authorization"],  # Allowed headers
+)
 
 if __name__ == '__main__':
     # Get values from environment variables

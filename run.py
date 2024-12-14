@@ -50,12 +50,45 @@ from app import create_app
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
+import threading
+from app.asterisk_core.scheduler_service import SchedulerService
+
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = create_app()
 
+
+
+# Add this at the end of your run.py
+def initialize_scheduler(app):
+    # Get AMI config from your environment or config
+    ami_config = {
+        'host': os.getenv('ASTERISK_HOST'),#app.config.get('ASTERISK_HOST', os.getenv('ASTERISK_HOST')),
+        'port': 8089,#os.getenv('ASTERISK_PORT'),#app.config.get('ASTERISK_PORT', os.getenv('ASTERISK_PORT')),
+        'username': os.getenv('ASTERISK_USERNAME'),#app.config.get('ASTERISK_USERNAME', os.getenv('ASTERISK_USERNAME')),
+        'secret': os.getenv('ASTERISK_SECRET')#app.config.get('ASTERISK_SECRET', os.getenv('ASTERISK_SECRET'))
+    }
+    print(ami_config)
+
+    scheduler = SchedulerService(ami_config)
+    scheduler_thread = threading.Thread(target=scheduler.start)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
+    
+    # Store scheduler instance in app context for cleanup
+    app.scheduler = scheduler
+    
+    # Register cleanup on app shutdown
+    @app.teardown_appcontext
+    
+    def cleanup(exception=None):
+        if hasattr(app, 'scheduler'):
+            app.scheduler.stop()
+
+
+initialize_scheduler(app)
 
 CORS(
     app,

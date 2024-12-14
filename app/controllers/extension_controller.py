@@ -38,16 +38,16 @@ class ExtensionController:
     def create_single_ext(data):
         try:
             Extension.single_ext_create(data)
-            return jsonify({
+            return {
                 'status': 'success',
                 'message': 'Extension created successfully'
-            }), 201
+            }
         except Exception as e:
             print(e)
-            return jsonify({
+            return {
                 'status': 'error1',
                 'message': str(e)
-            }), 500
+            }
 
     def update_extension(self, extension_id, data):
         try:

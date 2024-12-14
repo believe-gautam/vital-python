@@ -168,6 +168,34 @@ class User:
             cursor.close()
 
     @staticmethod
+    def resend_otp(data):
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        otp = data['otp']
+        email = data['email']
+        try:
+            # Fetch user by email
+            cursor.execute('''
+                SELECT * FROM users 
+                WHERE email = %s
+            ''', (email,))  # Note the comma here to make it a tuple
+            user = cursor.fetchone()
+            
+            if user:
+                # Update OTP for the user
+                cursor.execute('''
+                    UPDATE users SET otp = %s WHERE email = %s
+                ''', (otp, email))  # Both parameters passed as a tuple
+                db.commit()
+                print('OTP updated');
+                return cursor.rowcount > 0
+            else: 
+                return False
+        finally:
+            cursor.close()
+
+
+    @staticmethod
     def get_user_by_email(email):
         db = get_db()
         cursor = db.cursor(dictionary=True)

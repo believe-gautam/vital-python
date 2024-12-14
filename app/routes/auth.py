@@ -56,6 +56,30 @@ def register():
         return jsonify({'error': 'Email already exists'}), 409
 
 
+# register Request API
+@auth_bp.route('/resend-otp', methods=['POST'])
+def resend_otp():
+    try: 
+        data = request.get_json()
+        data['otp'] = ''.join(random.choices(string.digits, k=6))
+        print(data)
+        if(User.resend_otp(data)):
+            email = data['email']
+            otp = data['otp']
+            email_thread = threading.Thread(
+                target=send_email_async, 
+                args=(email, "Your OTP Verification Code", f"Your OTP is: {otp}")
+            )
+            email_thread.start()
+            return jsonify({'message': 'OTP Sent Successfully'}), 200
+        else: 
+            return jsonify({'error': 'Email does not exists'}), 409
+    except Exception as e:
+        return jsonify({'error': e}), 409
+
+
+
+
 # verify-otp Request API
 @auth_bp.route('/verify-otp', methods=['POST'])
 def verify_otp():

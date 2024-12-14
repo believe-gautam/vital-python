@@ -15,7 +15,6 @@ def token_required(f):
                 token = auth_header.split(" ")[1]  # Remove 'Bearer ' prefix
             except IndexError:
                 token = auth_header
-                
         if not token:
             return jsonify({'message': 'Token is missing'}), 401
         try:

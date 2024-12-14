@@ -95,9 +95,9 @@ def set_password(current_user):
     if data['new_password'] != data['confirm_password']:
         return jsonify({'error': 'Passwords do not match'}), 400
     if User.set_password(data['email'], data['new_password'],user_id):
-        data['iser_id'] = user_id
+        data['user_id'] = user_id
         response = extension_controller.create_single_ext(data)
-        return jsonify({'message': 'Password set successfully. You can now login'}), 200
+        return jsonify({'message': 'Password set successfully. You can now login',"response":response}), 200
     else:
         return jsonify({'error': 'Failed to set password. Verify OTP first'}), 400
 

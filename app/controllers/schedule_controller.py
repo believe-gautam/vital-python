@@ -105,7 +105,8 @@ from datetime import datetime
 class ScheduleController:
     def create_schedule(self, data):
         try:
-            required_fields = ['caller_extension', 'destination_extension', 'schedule_time']
+            # 'destination_extension',
+            required_fields = ['caller_extension',  'schedule_time']
             if not all(field in data for field in required_fields):
                 return jsonify({'error': 'Missing required fields'}), 400
 
@@ -118,7 +119,8 @@ class ScheduleController:
 
             schedule_id = CallSchedule.create(
                 caller_extension=data['caller_extension'],
-                destination_extension=data['destination_extension'],
+                # destination_extension=data['destination_extension'], //  we are not decide who will connect whome
+                destination_extension='',
                 schedule_time=schedule_time,
                 description=data.get('description'),
                 user_id=data.get('user_id')

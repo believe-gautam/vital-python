@@ -16,21 +16,21 @@ class CallSchedule:
             if not cursor.fetchone():
                 return None  # Source extension doesn't exist
 
-            cursor.execute(
-                "SELECT id FROM ps_endpoints WHERE id = %s", 
-                (destination_extension,)
-            )
-            if not cursor.fetchone():
-                return None  # Destination extension doesn't exist
+            # cursor.execute(
+            #     "SELECT id FROM ps_endpoints WHERE id = %s", 
+            #     (destination_extension,)
+            # )
+            # print('here we are 2')
+            # if not cursor.fetchone():
+            #     return None  # Destination extension doesn't exist
 
             # Insert the scheduled call
             cursor.execute(
                 """INSERT INTO scheduled_calls 
-                (user_id, source_extension, destination_extension, scheduled_time, notes, status)
-                VALUES (%s, %s, %s, %s, %s, %s)""",
-                (user_id, caller_extension, destination_extension, schedule_time, description, 'pending')
+                (user_id, source_extension,  scheduled_time, notes, status)
+                VALUES (%s, %s, %s,  %s, %s)""",
+                (user_id, caller_extension,  schedule_time, description, 'pending')
             )
-            
             db.commit()
             return cursor.lastrowid
         except Exception as e:

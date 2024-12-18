@@ -1,73 +1,94 @@
-# from app import create_app
-# from flask_cors import CORS
-# import os
-# from dotenv import load_dotenv
-
-# # Load environment variables from .env file
-# load_dotenv()
-
-# app = create_app()
-# CORS(app)
-
-# if __name__ == '__main__':
-#     # Get values from environment variables
-#     host = os.getenv('FLASK_RUN_HOST', '127.0.0.1')  # Default is '127.0.0.1'
-#     port = int(os.getenv('FLASK_RUN_PORT', 5000))  # Default is 5000
-#     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # Convert to boolean
-
-#     app.run(host=host, port=port, debug=debug)
-
-
-
-# from app import create_app
-# from flask_cors import CORS
-# import os
-# from dotenv import load_dotenv
-
-# # Load environment variables from .env file
-# load_dotenv()
-
-# app = create_app()
-
-# # Configure CORS
-# CORS(
-#     app,
-#     resources={r"/*": {"origins": "*"}},  # Allow all origins for all routes
-#     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Allowed methods
-#     allow_headers=["Content-Type", "Authorization"],  # Allowed headers
-# )
-
-# if __name__ == '__main__':
-#     # Get values from environment variables
-#     host = os.getenv('FLASK_RUN_HOST', '127.0.0.1')  # Default is '127.0.0.1'
-#     port = int(os.getenv('FLASK_RUN_PORT', 5000))  # Default is 5000
-#     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # Convert to boolean
-
-#     app.run(host=host, port=port, debug=debug)
-
-
 from app import create_app
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
+import atexit
+from apscheduler.schedulers.background import BackgroundScheduler
+from app.asterisk_core.call_matcher import CallMatcher
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Create Flask app
 app = create_app()
 
+# Initialize CallMatcher
+call_matcher = CallMatcher()
+scheduler = None
 
+def init_call_matcher():
+    """Initialize and start the call matcher background process"""
+    global scheduler
+    try:
+        logger.info("Initializing call matcher...")
+        if call_matcher.connect_ami():
+            scheduler = BackgroundScheduler()
+            # Run matching process every minute
+            scheduler.add_job(
+                func=call_matcher.check_and_process_schedules,
+                trigger="interval",
+                seconds=60,
+                id='call_matcher_job'
+            )
+            scheduler.start()
+            logger.info("Call matcher scheduler started successfully")
+            return True
+        else:
+            logger.error("Failed to connect to AMI")
+            return False
+    except Exception as e:
+        logger.error(f"Error initializing call matcher: {e}")
+        return False
+
+def cleanup_scheduler():
+    """Cleanup function to shut down the scheduler"""
+    global scheduler
+    if scheduler:
+        logger.info("Shutting down scheduler...")
+        scheduler.shutdown()
+        logger.info("Scheduler shutdown complete")
+
+# Register cleanup function
+atexit.register(cleanup_scheduler)
+
+# Initialize CORS
 CORS(
     app,
-    resources={r"/*": {"origins": "*"}},  # Allow all origins for all routes
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Allowed methods
-    allow_headers=["Content-Type", "Authorization"],  # Allowed headers
+    resources={r"/*": {"origins": "*"}},
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+@app.before_request
+def before_request():
+    """Initialize call matcher before first request if not already initialized"""
+    global scheduler
+    if not scheduler:
+        init_call_matcher()
+
+# Health check endpoint
+@app.route('/health')
+def health_check():
+    """Health check endpoint to verify scheduler status"""
+    global scheduler
+    return {
+        'status': 'healthy',
+        'scheduler_running': bool(scheduler and scheduler.running)
+    }
 
 if __name__ == '__main__':
     # Get values from environment variables
-    host = os.getenv('FLASK_RUN_HOST', '0.0.0.0')  # Default is '127.0.0.1'
-    port = int(os.getenv('FLASK_RUN_PORT', 3001))  # Default is 5000
-    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # Convert to boolean
-
+    host = os.getenv('FLASK_RUN_HOST', '0.0.0.0')
+    port = int(os.getenv('FLASK_RUN_PORT', 3001))
+    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    # Initialize call matcher before running the app
+    init_call_matcher()
+    
+    logger.info(f"Starting Flask app on {host}:{port} (debug: {debug})")
     app.run(host=host, port=port, debug=debug)
